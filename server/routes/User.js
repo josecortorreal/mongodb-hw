@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { User } = require('./models'); // Assuming the models are in the same directory
+const {User} = require("../models/schema.js");
 
 // GET route to retrieve all users
 router.get('/', async (req, res) => {
@@ -28,22 +28,44 @@ router.get('/:id', async (req, res) => {
 // POST route to create a new user
 router.post('/', async (req, res) => {
   try {
-    const user = await User.create(req.body);
+    const { fullName, email } = req.body;
+    const user = new User({ fullName, email });
+    await user.save();
     res.status(201).json(user);
   } catch (err) {
     res.status(400).json({ error: 'Failed to create user' });
   }
 });
 
-// PUT route to update a user
 router.put('/:id', async (req, res) => {
+    const { fullName, email } = req.body;
+    try {
+      const user = await User.findByIdAndUpdate(
+        req.params.id,
+        { fullName, email },
+        { new: true } // Add this option to get the updated user as the result
+      );
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      res.json(user);
+    } catch (err) {
+      res.status(400).json({ error: 'Failed to update user' });
+    }
+  });
+  
+
+// DELETE route to delete a user
+router.delete('/:id', async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const user = await User.findByIdAndDelete(req.params.id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    res.json(user);
+    res.json({ message: 'User deleted successfully' });
   } catch (err) {
-    res.status(400).json({ error: 'Failed to update user' });
+    res.status(400).json({ error: 'Failed to delete user' });
   }
 });
+
+module.exports = router;
